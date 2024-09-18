@@ -2,10 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using TreeApi.Data;
 using Microsoft.OpenApi.Models;
 using TreeApi.Errors;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 

@@ -20,7 +20,6 @@ namespace TreeApi.Controllers
         [HttpPost("getRange")]
         public async Task<IActionResult> GetRange([FromQuery] int skip, [FromQuery] int take, [FromBody] JournalFilter filter)
         {
-            // Filter logic, assuming filter has "from", "to", and "search" properties
             var query = _context.ExceptionJournals.AsQueryable();
 
             if (filter.From.HasValue)

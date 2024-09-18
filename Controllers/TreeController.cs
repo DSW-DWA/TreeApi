@@ -25,13 +25,31 @@ namespace TreeApi.Controllers
 
             if (tree == null)
             {
-                // Automatically create a tree if not exists
-                tree = new Tree { Name = treeName };
+                tree = new Tree { Name = treeName, Nodes = new List<Node>() };
+
                 _context.Trees.Add(tree);
                 await _context.SaveChangesAsync();
             }
 
-            return Ok(tree);
+            var treeDto = new TreeDTO
+            {
+                Id = tree.Id,
+                Name = tree.Name,
+                Nodes = tree.Nodes == null ? [] : MapNodesToDTO(tree.Nodes)
+            };
+
+            return Ok(treeDto);
+        }
+
+        private IEnumerable<NodeDTO> MapNodesToDTO(ICollection<Node> nodes)
+        {
+            return nodes.Select(n => new NodeDTO
+            {
+                Id = n.Id,
+                Name = n.Name,
+                ParentId = n.ParentId,
+                Children = n.Children == null ? [] : MapNodesToDTO(n.Children)
+            });
         }
     }
 
@@ -57,13 +75,16 @@ namespace TreeApi.Controllers
             var parentNode = tree.Nodes.FirstOrDefault(n => n.Id == parentNodeId);
             if (parentNode == null) return BadRequest("Parent node not found");
 
-            if (parentNode.Children.Any(c => c.Name == nodeName))
+            if (parentNode.Children != null && parentNode.Children.Any(c => c.Name == nodeName))
             {
                 return BadRequest("Node name must be unique across siblings");
             }
 
-            var newNode = new Node { Name = nodeName, Parent = parentNode };
+            var newNode = new Node { Name = nodeName, ParentId = parentNode.Id };
+
+            tree.Nodes.Add(newNode);
             _context.Nodes.Add(newNode);
+
             await _context.SaveChangesAsync();
 
             return Ok();
@@ -95,7 +116,7 @@ namespace TreeApi.Controllers
             var node = tree.Nodes.FirstOrDefault(n => n.Id == nodeId);
             if (node == null) return BadRequest("Node not found");
 
-            if (node.Parent.Children.Any(c => c.Name == newNodeName))
+            if (node.Children != null &&  node.Parent.Children.Any(c => c.Name == newNodeName))
             {
                 return BadRequest("Node name must be unique across siblings");
             }
@@ -105,5 +126,20 @@ namespace TreeApi.Controllers
 
             return Ok();
         }
+    }
+
+    public class TreeDTO
+    {
+        public long Id { get; set; }
+        public string Name { get; set; }
+        public IEnumerable<NodeDTO> Nodes { get; set; }
+    }
+
+    public class NodeDTO
+    {
+        public long Id { get; set; }
+        public string Name { get; set; }
+        public long? ParentId { get; set; }
+        public IEnumerable<NodeDTO> Children { get; set; }
     }
 }
